@@ -253,7 +253,7 @@ x64_vm_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
-
+	pages = (struct PageInfo *) boot_alloc(sizeof(struct PageInfo) * npages);
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -343,7 +343,7 @@ page_init(void)
 	// NB: Remember to mark the memory used for initial boot page table i.e (va>=BOOT_PAGE_TABLE_START && va < BOOT_PAGE_TABLE_END) as in-use (not free)
 	size_t i;
 	for (i = 0; i < npages; i++) {
-		if((i == 0) || (i >= IOPHYSMEM / PGSIZE && i < EXTPHYSMEM / PGSIZE) || (i >= EXTPHYSMEM / PGSIZE && i < (((uint32_t)boot_alloc(0) - KERNBASE) / PGSIZE))) {
+		if((i == 0) || (i >= PPN(IOPHYSMEM) && i < PPN(PADDR(boot_alloc(0))))) {
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
 		} else {
@@ -374,9 +374,9 @@ page_alloc(int alloc_flags)
 	}
 	struct PageInfo *result = page_free_list;
 	page_free_list = page_free_list->pp_link;
-	ret->pp_link = NULL;
+	result->pp_link = NULL;
 	if (alloc_flags & ALLOC_ZERO) {
-		memset(page2kva(ret), 0, PGSIZE);
+		memset(page2kva(result), 0, PGSIZE);
 	}
 	return result;
 }
