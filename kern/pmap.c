@@ -343,7 +343,7 @@ page_init(void)
 	// NB: Remember to mark the memory used for initial boot page table i.e (va>=BOOT_PAGE_TABLE_START && va < BOOT_PAGE_TABLE_END) as in-use (not free)
 	size_t i;
 	for (i = 0; i < npages; i++) {
-		if(i == 0) || (i >= IOPHYSMEM / PGSIZE && i < EXTPHYSMEM / PGSIZE) || (i >= EXTPHYSMEM / PGSIZE && i < ((uint32_t)boot_alloc(0) - KERNBASE) / PGSIZE) {
+		if((i == 0) || (i >= IOPHYSMEM / PGSIZE && i < EXTPHYSMEM / PGSIZE) || (i >= EXTPHYSMEM / PGSIZE && i < (((uint32_t)boot_alloc(0) - KERNBASE) / PGSIZE))) {
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
 		} else {
