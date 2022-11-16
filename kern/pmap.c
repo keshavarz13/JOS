@@ -270,7 +270,7 @@ x64_vm_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-
+	boot_map_region(pml4e, UPAGES, PTSIZE, PADDR(pages), PTE_U|PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -283,6 +283,7 @@ x64_vm_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+	boot_map_region(pml4e, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE. We have detected the number
@@ -292,6 +293,7 @@ x64_vm_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here: 
 	// Check that the initial page directory has been set up correctly.
+	boot_map_region(pml4e, KERNBASE, npages * PGSIZE, PADDR(KERNBASE), PTE_W | PTE_P);
 	check_page_free_list(1);
 	check_page_alloc();
 	page_check();
