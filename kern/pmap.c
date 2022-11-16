@@ -549,7 +549,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			return NULL;
 		new_pg->pp_ref ++;
 		*pt_addr = page2pa(new_pg) | PTE_U | PTE_W | PTE_P;
-		return (pte_t *)KADDR(PTE_ADDR(*pt_addr))[PTX(va)];
+		return &((pte_t *)KADDR(PTE_ADDR(*pt_addr)))[PTX(va)];
 	}
 }
 
