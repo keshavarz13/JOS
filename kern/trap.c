@@ -68,6 +68,27 @@ trap_init(void)
 	// LAB 3: Your code here.
 	idt_pd.pd_lim = sizeof(idt)-1;
 	idt_pd.pd_base = (uint64_t)idt;
+
+    SETGATE(idt[T_DIVIDE], 0, GD_KT, F_DIVIDE, 0);  
+    SETGATE(idt[T_DEBUG], 0, GD_KT, F_DEBUG, 0); 
+    SETGATE(idt[T_NMI], 0, GD_KT, F_NMI, 0); 
+    SETGATE(idt[T_BRKPT], 0, GD_KT, F_BRKPT  , 3); 
+    SETGATE(idt[T_OFLOW], 0, GD_KT, F_OFLOW, 0); 
+    SETGATE(idt[T_BOUND], 0, GD_KT, F_BOUND, 0); 
+    SETGATE(idt[T_ILLOP], 0, GD_KT, F_ILLOP, 0); 
+    SETGATE(idt[T_DEVICE], 0, GD_KT, F_DEVICE, 0); 
+    SETGATE(idt[T_DBLFLT], 0, GD_KT, F_DBLFLT, 0); 
+    SETGATE(idt[T_TSS], 0, GD_KT, F_TSS, 0); 
+    SETGATE(idt[T_SEGNP], 0, GD_KT, F_SEGNP, 0); 
+    SETGATE(idt[T_STACK], 0, GD_KT, F_STACK, 0);
+    SETGATE(idt[T_GPFLT], 0, GD_KT, F_GPFLT, 0);
+    SETGATE(idt[T_PGFLT], 0, GD_KT, F_PGFLT, 0); 
+    SETGATE(idt[T_FPERR], 0, GD_KT, F_FPERR, 0); 
+    SETGATE(idt[T_ALIGN], 0, GD_KT, F_ALIGN, 0); 
+    SETGATE(idt[T_MCHK], 0, GD_KT, F_MCHK, 0); 
+    SETGATE(idt[T_SIMDERR], 0, GD_KT, F_SIMDERR, 0);
+    SETGATE(idt[T_SYSCALL], 0, GD_KT, F_SYSCALL, 3);
+
 	// Per-CPU setup
 	trap_init_percpu();
 }
