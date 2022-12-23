@@ -43,7 +43,6 @@ i386_init(void)
 
 	// Lab 2 memory management initialization functions
 	x64_vm_init();
-<<<<<<< HEAD
 
 	// Lab 3 user environment initialization functions
 	env_init();
@@ -63,14 +62,7 @@ i386_init(void)
 
 	// We only have one user environment for now, so just run it.
 	env_run(&envs[0]);
-=======
 
-
-
-	// Drop into the kernel monitor.
-	while (1)
-		monitor(NULL);
->>>>>>> 95a1490b9cc66f94c24d36c679b832dd5458da4a
 }
 
 
