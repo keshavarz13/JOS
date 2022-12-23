@@ -19,6 +19,7 @@ void print_regs(struct PushRegs *regs);
 void print_trapframe(struct Trapframe *tf);
 void page_fault_handler(struct Trapframe *);
 void backtrace(struct Trapframe *);
+void breakpoint_handler(struct Trapframe *);
 
 extern void F_DIVIDE(); 
 extern void F_DEBUG();  
