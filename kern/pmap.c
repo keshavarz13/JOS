@@ -360,7 +360,13 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+  	uintptr_t kstacktop_i;
+    int i;
+    for (i = 0; i < NCPU; i++) {
+        kstacktop_i = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+		boot_map_region(boot_pml4e, kstacktop_i - KSTKSIZE, KSTKSIZE,
+                PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
+    }
 }
 
 // --------------------------------------------------------------
@@ -422,6 +428,10 @@ page_init(void)
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
     }
+    i = PPN(MPENTRY_PADDR);
+    pages[i].pp_ref = 1;
+    pages[i + 1].pp_link = pages[i].pp_link;
+    pages[i].pp_link = NULL;
 }
 
 //
@@ -470,13 +480,13 @@ page_free(struct PageInfo *pp)
 {
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
-
-	// pp->pp_link is not NULL.	
+	// pp->pp_link is not NULL.
+    assert(pp->pp_link == NULL);
     assert(pp->pp_ref  == 0);
-	assert(pp->pp_link == NULL);
+
     pp->pp_link = page_free_list;
     page_free_list = pp;
-
+}
 //
 // Decrement the reference count on a page,
 // freeing it if there are no more refs.
@@ -635,19 +645,17 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pml4e_t *pml4e, uintptr_t la, size_t size, physaddr_t pa, int perm)
 {
-	size_t page_number; 
-	if (size % PGSIZE == 0){
-		page_number = size / PGSIZE;
-	}else{
-		page_number = size / PGSIZE + 1;
-	} 
-	
-	size_t i;
-	pte_t *pte;
-    for (i = 0; i < page_number; i++) {
+    size_t no_pages; 
+    size_t i;
+    pte_t *pte;
+
+    no_pages = size % PGSIZE == 0 ? size / PGSIZE : size / PGSIZE + 1;
+
+    for (i = 0; i < no_pages; i++) {
         pte = pml4e_walk(pml4e, (void *) la, 1);
         assert(pte != NULL);
         *pte = (pa + i * PGSIZE) | perm | PTE_P;
+
         la += PGSIZE;
     }
 }
@@ -785,6 +793,8 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// value will be preserved between calls to mmio_map_region
 	// (just like nextfree in boot_alloc).
 	static uintptr_t base = MMIOBASE;
+    size = ROUNDUP(size, PGSIZE);
+
 
 	// Reserve size bytes of virtual memory starting at base and
 	// map physical pages [pa,pa+size) to virtual addresses
@@ -804,8 +814,14 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+    if (base + size > MMIOLIM) {
+        panic("mmio_map_region: exceeding MMIOLIM");
+    }
 
+    boot_map_region(boot_pml4e, base, size, pa, PTE_W | PTE_PCD | PTE_PWT);
+    base += size;
+
+    return (void *) base - size;
 }
 
 static uintptr_t user_mem_check_addr;
