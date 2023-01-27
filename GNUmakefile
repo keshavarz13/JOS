@@ -118,7 +118,6 @@ all:
 	   $(OBJDIR)/lib/%.o $(OBJDIR)/fs/%.o $(OBJDIR)/net/%.o \
 	   $(OBJDIR)/user/%.o
 
-EXTRA_HOST_KERN_CFLAGS :=
 KERN_CFLAGS := $(CFLAGS) -DJOS_KERNEL -DDWARF_SUPPORT -gdwarf-2 -mcmodel=large -m64
 BOOT_CFLAGS := $(CFLAGS) -DJOS_KERNEL -gdwarf-2 -m32
 USER_CFLAGS := $(CFLAGS) -DJOS_USER -gdwarf-2 -mcmodel=large -m64
@@ -147,8 +146,7 @@ include user/Makefrag
 
 CPUS ?= 1
 
-## We need KVM for qemu to export VMX
-QEMUOPTS = -cpu qemu64,+vmx -enable-kvm -m 256 -drive format=raw,file=$(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT)
+QEMUOPTS = -m 256 -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT)
 QEMUOPTS += $(shell if $(QEMU) -nographic -help | grep -q '^-D '; then echo '-D qemu.log'; fi)
 IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS += -smp $(CPUS)
