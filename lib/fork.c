@@ -35,7 +35,6 @@ pgfault(struct UTrapframe *utf)
 	//   No need to explicitly delete the old page's mapping.
 
 	// LAB 4: Your code here.
-	pte_t entry = uvpt[VPN(addr)];
 	if (!(uvpt[VPN(addr)] & PTE_COW)) {
         panic("pgfault: Not a COW page, %e", err);	
     }

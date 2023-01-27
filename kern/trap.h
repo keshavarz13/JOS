@@ -41,5 +41,21 @@ extern void F_MCHK();
 extern void F_SIMDERR(); 
 extern void F_SYSCALL();
 extern void F_DEFAULT();
+extern void F_IRQ0();
+extern void F_IRQ1();
+extern void F_IRQ2();
+extern void F_IRQ3();
+extern void F_IRQ4();
+extern void F_IRQ5();
+extern void F_IRQ6();
+extern void F_IRQ7();
+extern void F_IRQ8();
+extern void F_IRQ9();
+extern void F_IRQ10();
+extern void F_IRQ11();
+extern void F_IRQ12();
+extern void F_IRQ13();
+extern void F_IRQ14();
+extern void F_IRQ15();
 
 #endif /* JOS_KERN_TRAP_H */

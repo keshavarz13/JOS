@@ -43,7 +43,7 @@ sched_yield(void)
         curenv_i = (curenv_i + 1) % NENV;
     }
 
-    if (curenv->env_status == ENV_RUNNING) {
+    if (curenv && curenv->env_status == ENV_RUNNING) {
         env_run(curenv);
     }
 	sched_halt();
