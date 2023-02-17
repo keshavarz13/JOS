@@ -693,8 +693,15 @@ page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm)
         return -E_NO_MEM;
     }
 
+    if (PTE_ADDR(*pte) == page_physaddr) {
+        *pte = PTE_ADDR(*pte) | perm | PTE_P;
+        tlb_invalidate(pml4e, va);
+        return 0;
+    }
+
     if (*pte & PTE_P) {
         page_remove(pml4e, va);
+        tlb_invalidate(pml4e, va);
     }
 
     *pte = page_physaddr | perm | PTE_P;
