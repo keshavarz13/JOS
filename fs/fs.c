@@ -59,25 +59,18 @@ alloc_block(void)
 	// The bitmap consists of one or more blocks.  A single bitmap block
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
+    uint32_t i;
 
-	// LAB 5: Your code here.
-	uint32_t i;
-    uint32_t j;
-    uint32_t blockno;
-    uint32_t max = -1;
-	for (i = 2; i < super->s_nblocks / 32; i++) {
-        if (bitmap[i] == max) {
-            continue;
+    for (i = 2; i < super->s_nblocks ; i++) {
+
+        if (block_is_free(i)) {
+            bitmap[i / 32] &= ~(1 << (i % 32));
+            flush_block((void*)bitmap);
+            return i; 
         }
-        for (j = 0; j < 32; j++) {
-            blockno = i * 32 + j;
-            if (block_is_free(blockno)) {
-				bitmap[i] &= ~(1 << (blockno % 32));
-				flush_block((void*)bitmap);
-				return blockno; 
-            }
-        }
+
     }
+
 	return -E_NO_DISK;
 }
 
@@ -153,9 +146,13 @@ fs_init(void)
 int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
+    // LAB 5: Your code here.
+    uint32_t blockno;
+
 	if (filebno >= NDIRECT + NINDIRECT) {
 		return -E_INVAL;
 	}
+
 	uint32_t nblock = f->f_size / BLKSIZE;
 
 	if (filebno > nblock) {
@@ -166,6 +163,17 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 		*ppdiskbno = &f->f_direct[filebno];
 		return 0;
 	}
+    
+    if(!f->f_indirect & alloc) {
+		blockno = alloc_block();
+		
+		if (blockno < 0) {
+			return -E_NO_DISK;
+		}
+		f->f_indirect = blockno;
+
+		*ppdiskbno = (uint32_t*)diskaddr(blockno) + filebno - NDIRECT;
+    }
 
     if(!f->f_indirect) {
         return -E_NOT_FOUND;
@@ -187,19 +195,33 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
+	// LAB 5: Your code here.
     int err;
+    uint32_t blockno;
+	uint32_t *ppdiskbno;
+
 	if (filebno >= NDIRECT + NINDIRECT) {
 		return -E_INVAL;
 	}
-	uint32_t *ppdiskbno;
-	err = file_block_walk(f, filebno, &ppdiskbno, false);
+
+	err = file_block_walk(f, filebno, &ppdiskbno, true);
+
 	if (err < 0) {
 		return err;
     }
+
     if (!*ppdiskbno) {
-        return -E_NO_DISK;
+		blockno = alloc_block();
+		
+		if (blockno < 0) {
+			return -E_NO_DISK;
+		}
+		
+		*ppdiskbno = blockno;
     }
+
 	*blk = (char*) diskaddr(*ppdiskbno);
+
 	return 0;
 }
 
@@ -519,4 +541,3 @@ fs_sync(void)
 	for (i = 1; i < super->s_nblocks; i++)
 		flush_block(diskaddr(i));
 }
-
