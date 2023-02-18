@@ -83,6 +83,14 @@ duppage(envid_t envid, unsigned pn)
 
     perm = pte & PTE_SYSCALL;
 
+    if (perm & PTE_SHARE) {
+        err = sys_page_map(0, va, envid, va, perm);
+		if (err < 0) { 
+			panic("duppage: Failed on PTE_SHARE.\n");
+        }
+        return 0;
+    }
+
     if (perm & PTE_COW || perm & PTE_W) {
         perm &= ~PTE_W;
         perm |= PTE_COW;

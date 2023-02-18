@@ -301,6 +301,44 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	int perm;
+    int r;
+    int pml4;
+    int pdpe;
+    int pde;
+    int pte;
+    int i;
+    int j;
+    uint64_t k;
+    void *addr;
+
+    for(pml4 = 0; pml4 < VPML4E(UTOP); pml4++) {
+		if(!(uvpml4e[pml4] & PTE_P)) {
+            continue;
+        }
+        for (pdpe = 0; pdpe < NPDPENTRIES; pdpe++) {
+            i = pml4 * NPDPENTRIES + pdpe;
+            if(!(uvpde[i] & PTE_P)) {
+                continue;
+            }
+            for (pde = 0; pde < NPDENTRIES; pde++) {
+                j = i * NPDENTRIES + pde;
+                if(!(uvpd[j] & PTE_P)) {
+                    continue;
+                }
+                for (pte = 0; pte < NPTENTRIES; pte++) {
+                    k = j * NPTENTRIES + pte;
+                    if(uvpt[k] & PTE_SHARE) {
+                        perm = uvpt[k] & PTE_SYSCALL;
+                        addr = (void*) (k * PGSIZE);
+                        r = sys_page_map(0, addr, child, addr, perm);
+                        if (r < 0)
+                           panic("Couldn't copy mapping to child address space %e\n", r);
+                    }
+                }
+            }
+        }
+    }
 	return 0;
 }
 
