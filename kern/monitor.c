@@ -27,6 +27,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "backtrace", "Display the stack backtrace", mon_backtrace },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -61,39 +62,50 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	backtraceWrapper();
+    btrace();
 	return 0;
 }
 
 int
-backtraceWrapper()
-{
-	int i;
+btrace() {
+    int i;
     uint64_t *rbp;
     uint64_t *rip;
     uintptr_t offset;
     struct Ripdebuginfo info;
 
+
     rbp = (uint64_t*) read_rbp();
+
 	cprintf("Stack backtrace:\n");
 
     while ((uint64_t*) *rbp) {
         rip = rbp + 1;
+
 		cprintf("rbp %016x  rip %016x\n", *rbp, *rip);
+
         debuginfo_rip(*rip, &info);
+
         offset = *rip - info.rip_fn_addr;
+
         cprintf("\t%s:%d: ", info.rip_file, info.rip_line);
         cprintf("%.*s+%016x  ",info.rip_fn_namelen, info.rip_fn_name, offset);
         cprintf("args:%d ", info.rip_fn_narg);
 
         for (i = 0; i < info.rip_fn_narg; i++) {
             uint64_t *ptr = (uint64_t *) ( (uint64_t) (rbp + 1) - info.offset_fn_arg[0]);
+
             cprintf(" %016x ", (uint32_t) *ptr);
         }
+
         cprintf("\n");
+
 		rbp = (uint64_t*) *rbp;
+
     }
+
 	return 0;
+
 }
 
 
@@ -146,9 +158,8 @@ void
 monitor(struct Trapframe *tf)
 {
 	char *buf;
-
-	cprintf("Welcome to the JOS kernel monitor!\n", 2);
-	cprintf("Type 'help' for a list of commands.\n", 4);
+	cprintf("%rWelcome to the JOS kernel monitor!\n", 2);
+	cprintf("%rType 'help' for a list of commands.\n", 4);
 
 	if (tf != NULL)
 		print_trapframe(tf);

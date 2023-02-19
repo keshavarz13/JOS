@@ -147,10 +147,14 @@ include fs/Makefrag
 
 
 CPUS ?= 1
+
+## We need KVM for qemu to export VMX
 QEMUOPTS = -m 256 -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT)
 QEMUOPTS += $(shell if $(QEMU) -nographic -help | grep -q '^-D '; then echo '-D qemu.log'; fi)
 IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS += -smp $(CPUS)
+QEMUOPTS += -hdb $(OBJDIR)/fs/fs.img
+IMAGES += $(OBJDIR)/fs/fs.img
 QEMUOPTS += $(QEMUEXTRA)
 
 
@@ -206,8 +210,6 @@ endif
 
 grade:
 	@echo $(MAKE) clean
-	@$(MAKE) clean || \
-	  (echo "'make clean' failed.  HINT: Do you have another running instance of JOS?" && exit 1)
 	./grade-lab$(LAB) $(GRADEFLAGS)
 
 update:

@@ -94,6 +94,7 @@ trap_init(void)
     SETGATE(idt[T_MCHK   ], 0, GD_KT, F_MCHK   , 0); 
     SETGATE(idt[T_SIMDERR], 0, GD_KT, F_SIMDERR, 0);
     SETGATE(idt[T_SYSCALL], 0, GD_KT, F_SYSCALL, 3);
+
 	SETGATE(idt[IRQ_OFFSET +  0], 0, GD_KT, F_IRQ0 , 0);
 	SETGATE(idt[IRQ_OFFSET +  1], 0, GD_KT, F_IRQ1 , 0);
 	SETGATE(idt[IRQ_OFFSET +  2], 0, GD_KT, F_IRQ2 , 0);
@@ -110,6 +111,7 @@ trap_init(void)
 	SETGATE(idt[IRQ_OFFSET + 13], 0, GD_KT, F_IRQ13, 0);
 	SETGATE(idt[IRQ_OFFSET + 14], 0, GD_KT, F_IRQ14, 0);
 	SETGATE(idt[IRQ_OFFSET + 15], 0, GD_KT, F_IRQ15, 0);
+
 	// Per-CPU setup
 	trap_init_percpu();
 }
@@ -141,8 +143,10 @@ trap_init_percpu(void)
 	//
 	// LAB 4: Your code here:
 
-
     uint8_t id = thiscpu->cpu_id;
+
+
+
 
 
 	// Setup a TSS so that we get the right stack
@@ -219,6 +223,8 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
+	// Unexpected trap: The user process or the kernel has a bug.
+//	print_trapframe(tf);
 
     if (tf->tf_trapno == T_PGFLT) {
         page_fault_handler(tf);
@@ -258,6 +264,15 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle keyboard and serial interrupts.
 	// LAB 5: Your code here.
 
+	if(tf->tf_trapno == (IRQ_OFFSET + IRQ_KBD)) {
+		kbd_intr();
+		sched_yield();
+	}
+	else if(tf->tf_trapno == (IRQ_OFFSET + IRQ_SERIAL))
+	{
+		serial_intr();
+		sched_yield();
+	}
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -295,7 +310,6 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
-
         lock_kernel();
 		assert(curenv);
 
@@ -335,7 +349,8 @@ void
 page_fault_handler(struct Trapframe *tf)
 {
 	uint64_t fault_va;
-  	struct UTrapframe utf;
+    struct UTrapframe utf;
+
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
 
@@ -379,25 +394,20 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
-
-
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_rip);
-	print_trapframe(tf);
-	env_destroy(curenv);
     if (!curenv->env_pgfault_upcall) {
         cprintf("[%08x] user fault va %08x ip %08x\n",
             curenv->env_id, fault_va, tf->tf_rip);
         print_trapframe(tf);
         env_destroy(curenv);
     }
+
 	utf.utf_fault_va = fault_va;
 	utf.utf_err = tf->tf_err;
 	utf.utf_regs = tf->tf_regs;
 	utf.utf_rip = tf->tf_rip;
 	utf.utf_eflags = tf->tf_eflags;
 	utf.utf_rsp = tf->tf_rsp;
+
     if (tf->tf_rsp >= UXSTACKTOP - PGSIZE && tf->tf_rsp < UXSTACKTOP) {
         tf->tf_rsp -=  8 + sizeof(struct UTrapframe);
     } else {
@@ -413,8 +423,10 @@ page_fault_handler(struct Trapframe *tf)
 
 	user_mem_assert(curenv, (void *)(tf->tf_rsp), sizeof(struct UTrapframe),
 					PTE_P | PTE_W | PTE_U);
+
 	user_mem_assert(curenv, (void *)(curenv->env_pgfault_upcall), 8,
 					PTE_P | PTE_U);
+
     *(struct UTrapframe *)(tf->tf_rsp) = utf;
 
     tf->tf_rip = (uintptr_t) curenv->env_pgfault_upcall;
@@ -426,3 +438,4 @@ breakpoint_handler(struct Trapframe *tf) {
     monitor(tf);
     return;
 }
+
